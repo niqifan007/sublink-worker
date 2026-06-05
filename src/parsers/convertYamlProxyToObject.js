@@ -251,7 +251,7 @@ export function convertYamlProxyToObject(p) {
                 server: p.server,
                 server_port: parseInt(p.port),
                 password: p.password,
-                udp: !!p.udp,
+                udp: typeof p.udp !== 'undefined' ? !!p.udp : undefined,
                 'idle-session-check-interval': p['idle-session-check-interval'],
                 'idle-session-timeout': p['idle-session-timeout'],
                 'min-idle-session': p['min-idle-session'],
