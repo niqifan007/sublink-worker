@@ -1,7 +1,7 @@
 import yaml from 'js-yaml';
 import { CLASH_CONFIG, generateRules, generateClashRuleSets, getOutbounds, PREDEFINED_RULE_SETS, DIRECT_DEFAULT_RULES } from '../config/index.js';
 import { BaseConfigBuilder } from './BaseConfigBuilder.js';
-import { deepCopy, groupProxiesByCountry, buildCountryNameFilter } from '../utils.js';
+import { addCountryFlagToNodeName, deepCopy, groupProxiesByCountry, buildCountryNameFilter } from '../utils.js';
 import { addProxyWithDedup } from './helpers/proxyHelpers.js';
 import { buildSelectorMembers, buildNodeSelectMembers, buildCustomRuleMembers, uniqueNames } from './helpers/groupBuilder.js';
 import { emitClashRules, sanitizeClashProxyGroups } from './helpers/clashConfigUtils.js';
@@ -47,6 +47,10 @@ function getClashUdpValue(proxy, defaultEnabled = true) {
     return defaultEnabled;
 }
 
+function getCountryFlagIcon(code) {
+    return code ? `https://flagcdn.com/${code.toLowerCase()}.svg` : undefined;
+}
+
 export class ClashConfigBuilder extends BaseConfigBuilder {
     constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry = false, enableClashUI = false, externalController, externalUiDownloadUrl, includeAutoSelect = true) {
         if (!baseConfig) {
@@ -56,6 +60,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
         this.selectedRules = selectedRules;
         this.customRules = customRules;
         this.countryGroupNames = [];
+        this.proxyNameMap = new Map();
         this.manualGroupName = null;
         this.enableClashUI = enableClashUI;
         this.externalController = externalController;
@@ -129,10 +134,12 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
     }
 
     convertProxy(proxy) {
+        const name = addCountryFlagToNodeName(proxy.tag);
+        this.proxyNameMap.set(proxy.tag, name);
         switch (proxy.type) {
             case 'shadowsocks':
                 return {
-                    name: proxy.tag,
+                    name,
                     type: 'ss',
                     server: proxy.server,
                     port: proxy.server_port,
@@ -144,7 +151,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                 };
             case 'vmess':
                 return {
-                    name: proxy.tag,
+                    name,
                     type: proxy.type,
                     server: proxy.server,
                     port: proxy.server_port,
@@ -188,7 +195,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                 };
             case 'vless':
                 return {
-                    name: proxy.tag,
+                    name,
                     type: proxy.type,
                     server: proxy.server,
                     port: proxy.server_port,
@@ -218,7 +225,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                 };
             case 'hysteria2':
                 return {
-                    name: proxy.tag,
+                    name,
                     type: proxy.type,
                     server: proxy.server,
                     port: proxy.server_port,
@@ -238,7 +245,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                 };
             case 'trojan':
                 return {
-                    name: proxy.tag,
+                    name,
                     type: proxy.type,
                     server: proxy.server,
                     port: proxy.server_port,
@@ -267,7 +274,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                 };
             case 'tuic':
                 return {
-                    name: proxy.tag,
+                    name,
                     type: proxy.type,
                     server: proxy.server,
                     port: proxy.server_port,
@@ -285,7 +292,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                 };
             case 'anytls':
                 return {
-                    name: proxy.tag,
+                    name,
                     type: 'anytls',
                     server: proxy.server,
                     port: proxy.server_port,
@@ -512,7 +519,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
         const countryGroupNames = [];
 
         countries.forEach(country => {
-            const { emoji, name, aliases, proxies } = countryGroups[country];
+            const { code, emoji, name, aliases, proxies } = countryGroups[country];
             const groupName = `${emoji} ${name}`;
             const norm = normalizeGroupName(groupName);
             if (!existingNames.has(norm)) {
@@ -522,7 +529,8 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                     proxies: proxies,
                     url: 'https://www.gstatic.com/generate_204',
                     interval: 300,
-                    lazy: false
+                    lazy: false,
+                    icon: getCountryFlagIcon(code)
                 };
                 // Add 'use' field if we have proxy-providers, narrowed to this
                 // country so provider members don't leak into every group
@@ -579,9 +587,16 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
         userGroups.forEach(userGroup => {
             if (!userGroup?.name) return;
 
+            const mappedUserGroup = {
+                ...userGroup,
+                ...(Array.isArray(userGroup.proxies)
+                    ? { proxies: userGroup.proxies.map(name => this.proxyNameMap.get(name) || name) }
+                    : {})
+            };
+
             const existingIndex = findGroupIndexByName(
                 this.config['proxy-groups'],
-                userGroup.name
+                mappedUserGroup.name
             );
 
             if (existingIndex >= 0) {
@@ -589,8 +604,8 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                 const existing = this.config['proxy-groups'][existingIndex];
 
                 // Merge 'use' field (provider references)
-                if (Array.isArray(userGroup.use) && userGroup.use.length > 0) {
-                    const validUserProviders = userGroup.use.filter(p => allProviderNames.has(p));
+                if (Array.isArray(mappedUserGroup.use) && mappedUserGroup.use.length > 0) {
+                    const validUserProviders = mappedUserGroup.use.filter(p => allProviderNames.has(p));
                     existing.use = [...new Set([
                         ...(existing.use || []),
                         ...validUserProviders
@@ -598,8 +613,8 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                 }
 
                 // Merge 'proxies' field - validate references first
-                if (Array.isArray(userGroup.proxies)) {
-                    const validUserProxies = userGroup.proxies.filter(p => validRefs.has(p));
+                if (Array.isArray(mappedUserGroup.proxies)) {
+                    const validUserProxies = mappedUserGroup.proxies.filter(p => validRefs.has(p));
                     existing.proxies = [...new Set([
                         ...(existing.proxies || []),
                         ...validUserProxies
@@ -607,12 +622,12 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                 }
 
                 // Preserve user's custom settings (url, interval)
-                if (userGroup.url) existing.url = userGroup.url;
-                if (typeof userGroup.interval === 'number') existing.interval = userGroup.interval;
-                if (typeof userGroup.lazy === 'boolean') existing.lazy = userGroup.lazy;
+                if (mappedUserGroup.url) existing.url = mappedUserGroup.url;
+                if (typeof mappedUserGroup.interval === 'number') existing.interval = mappedUserGroup.interval;
+                if (typeof mappedUserGroup.lazy === 'boolean') existing.lazy = mappedUserGroup.lazy;
             } else {
                 // New user-defined group - validate and add
-                const newGroup = { ...userGroup };
+                const newGroup = { ...mappedUserGroup };
 
                 // Validate proxies references
                 if (Array.isArray(newGroup.proxies)) {

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import yaml from 'js-yaml';
 import { ClashConfigBuilder } from '../src/builders/ClashConfigBuilder.js';
 import { createTranslator } from '../src/i18n/index.js';
-import { groupProxiesByCountry, parseCountryFromNodeName } from '../src/utils.js';
+import { addCountryFlagToNodeName, groupProxiesByCountry, parseCountryFromNodeName } from '../src/utils.js';
 
 // Create translator for tests
 const t = createTranslator('zh-CN');
@@ -23,24 +23,34 @@ vmess://ewogICJ2IjogIjIiLAogICJwcyI6ICJ0dzEubm9kZS5jb20iLAogICJhZGQiOiAidHcxLm5v
 
         const proxiesCount = (built.proxies || []).length;
         expect(proxiesCount).toBeGreaterThan(0);
+        expect(built.proxies.map(proxy => proxy.name)).toEqual(expect.arrayContaining([
+            '🇭🇰 HK-Node-1',
+            '🇭🇰 香港节点2',
+            '🇺🇸 US-Node-1',
+            '🇺🇸 美国节点2',
+            '🇹🇼 台湾节点'
+        ]));
 
         // Check Hong Kong group
         const hkGroup = (built['proxy-groups'] || []).find(g => g && g.name === '🇭🇰 Hong Kong');
         expect(hkGroup).toBeDefined();
         expect(hkGroup.proxies.length).toBe(2);
         expect(hkGroup.type).toBe('url-test');
+        expect(hkGroup.icon).toBe('https://flagcdn.com/hk.svg');
 
         // Check US group
         const usGroup = (built['proxy-groups'] || []).find(g => g && g.name === '🇺🇸 United States');
         expect(usGroup).toBeDefined();
         expect(usGroup.proxies.length).toBe(2);
         expect(usGroup.type).toBe('url-test');
+        expect(usGroup.icon).toBe('https://flagcdn.com/us.svg');
 
         // Check Taiwan group
         const twGroup = (built['proxy-groups'] || []).find(g => g && g.name === '🇹🇼 Taiwan');
         expect(twGroup).toBeDefined();
         expect(twGroup.proxies.length).toBe(1);
         expect(twGroup.type).toBe('url-test');
+        expect(twGroup.icon).toBe('https://flagcdn.com/tw.svg');
 
         // Check manual switch group
         const manualName = t('outboundNames.Manual Switch');
@@ -118,6 +128,14 @@ vmess://ewogICJ2IjogIjIiLAogICJwcyI6ICJ0dzEubm9kZS5jb20iLAogICJhZGQiOiAidHcxLm5v
         it('should prefer longer alias over shorter (Indonesia vs India)', () => {
             expect(parseCountryFromNodeName('Indonesia-1')).toMatchObject({ code: 'ID' });
             expect(parseCountryFromNodeName('印度尼西亚节点')).toMatchObject({ code: 'ID' });
+        });
+    });
+
+    describe('addCountryFlagToNodeName', () => {
+        it('adds the detected flag without duplicating an existing flag', () => {
+            expect(addCountryFlagToNodeName('JP-XXX')).toBe('🇯🇵 JP-XXX');
+            expect(addCountryFlagToNodeName('🇯🇵 JP-XXX')).toBe('🇯🇵 JP-XXX');
+            expect(addCountryFlagToNodeName('Unknown-XXX')).toBe('Unknown-XXX');
         });
     });
 });
