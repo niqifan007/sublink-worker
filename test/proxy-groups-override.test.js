@@ -194,7 +194,7 @@ FINAL,DIRECT
             const customGroup = (built['proxy-groups'] || []).find(g => g && g.name === '自定义选择');
             expect(customGroup).toBeDefined();
             expect(customGroup.type).toBe('select');
-            expect(customGroup.proxies).toContain('HK-Node');
+            expect(customGroup.proxies).toContain('🇭🇰 HK-Node');
         });
 
         it('ClashConfigBuilder should preserve custom proxy-group from Sing-Box input', async () => {
@@ -205,7 +205,7 @@ FINAL,DIRECT
             const customGroup = (built['proxy-groups'] || []).find(g => g && g.name === '自定义选择');
             expect(customGroup).toBeDefined();
             expect(customGroup.type).toBe('select');
-            expect(customGroup.proxies).toContain('HK-Node');
+            expect(customGroup.proxies).toContain('🇭🇰 HK-Node');
         });
 
         it('ClashConfigBuilder should preserve custom proxy-group from Surge input', async () => {
@@ -216,7 +216,7 @@ FINAL,DIRECT
             const customGroup = (built['proxy-groups'] || []).find(g => g && g.name === '自定义选择');
             expect(customGroup).toBeDefined();
             expect(customGroup.type).toBe('select');
-            expect(customGroup.proxies).toContain('HK-Node');
+            expect(customGroup.proxies).toContain('🇭🇰 HK-Node');
         });
 
         it('SingboxConfigBuilder should add groups from Sing-Box input (converted format)', async () => {
@@ -295,7 +295,7 @@ proxy-groups:
             expect(autoGroups).toHaveLength(1);
 
             // Should have merged proxies and preserved user's custom settings
-            expect(autoGroups[0].proxies).toContain('HK-Node');
+            expect(autoGroups[0].proxies).toContain('🇭🇰 HK-Node');
             expect(autoGroups[0].interval).toBe(600);
             expect(autoGroups[0].url).toBe('http://custom.test/204');
         });

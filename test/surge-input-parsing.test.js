@@ -185,8 +185,8 @@ FINAL,DIRECT
             const proxies = result.proxies;
 
             expect(proxies.length).toBe(5);
-            expect(proxies.map(p => p.name)).toContain('HK-SS');
-            expect(proxies.map(p => p.name)).toContain('US-VMess');
+            expect(proxies.map(p => p.name)).toContain('🇭🇰 HK-SS');
+            expect(proxies.map(p => p.name)).toContain('🇺🇸 US-VMess');
         });
     });
 });

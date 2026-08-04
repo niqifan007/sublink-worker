@@ -103,7 +103,7 @@ describe('issue #403: country groups in proxy-provider mode', () => {
         const config = yaml.load(await builder.build());
 
         const hkGroup = findGroup(config, '🇭🇰 Hong Kong');
-        expect(hkGroup.proxies).toContain('HK-Inline');
+        expect(hkGroup.proxies).toContain('🇭🇰 HK-Inline');
         expect(hkGroup.use).toBeDefined();
         // filter prevents every provider node from landing in every country group
         expect(hkGroup.filter).toBeDefined();

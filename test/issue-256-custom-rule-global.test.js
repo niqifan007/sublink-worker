@@ -132,7 +132,7 @@ describe('Issue #256 - Custom rules should not bypass selector chain', () => {
 
             // Should NOT contain country groups
             const hasCountryGroup = customRule1.proxies.some(tag =>
-                tag.includes('🇺🇸') || tag.includes('🇬🇧') || tag.includes('United States') || tag.includes('United Kingdom')
+                tag === '🇺🇸 United States' || tag === '🇬🇧 United Kingdom'
             );
             expect(hasCountryGroup).toBe(false);
         });

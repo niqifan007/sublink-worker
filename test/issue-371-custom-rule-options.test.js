@@ -32,11 +32,19 @@ describe('Issue #371 - custom rule groups keep full proxy choices without countr
 
     const expectedCountryMembers = [...expectedSingboxCountryMembers, 'REJECT'];
     const expectedFlatMembers = [...expectedSingboxFlatMembers, 'REJECT'];
+    const expectedClashCountryMembers = expectedCountryMembers.map(member => ({
+        'US-Node-1': '🇺🇸 US-Node-1',
+        'UK-Node-1': '🇬🇧 UK-Node-1'
+    })[member] || member);
+    const expectedClashFlatMembers = expectedFlatMembers.map(member => ({
+        'US-Node-1': '🇺🇸 US-Node-1',
+        'UK-Node-1': '🇬🇧 UK-Node-1'
+    })[member] || member);
 
     const expectCompleteOptionsWithoutCountries = (members, expectedMembers) => {
         expect(members).toEqual(expectedMembers);
         expect(members.some(member =>
-            member.includes('🇺🇸') || member.includes('🇬🇧') || member.includes('United States') || member.includes('United Kingdom')
+            member === '🇺🇸 United States' || member === '🇬🇧 United Kingdom'
         )).toBe(false);
     };
 
@@ -102,7 +110,7 @@ describe('Issue #371 - custom rule groups keep full proxy choices without countr
         await builder.build();
 
         const customRule = builder.config['proxy-groups'].find(group => group?.name === 'Custom-Rule');
-        expectCompleteOptionsWithoutCountries(customRule.proxies, expectedCountryMembers);
+        expectCompleteOptionsWithoutCountries(customRule.proxies, expectedClashCountryMembers);
     });
 
     it('Clash custom rule includes direct proxy choices when groupByCountry is disabled', async () => {
@@ -123,7 +131,7 @@ describe('Issue #371 - custom rule groups keep full proxy choices without countr
         await builder.build();
 
         const customRule = builder.config['proxy-groups'].find(group => group?.name === 'Custom-Rule');
-        expectCompleteOptionsWithoutCountries(customRule.proxies, expectedFlatMembers);
+        expectCompleteOptionsWithoutCountries(customRule.proxies, expectedClashFlatMembers);
     });
 
     it('Surge custom rule includes direct proxy choices when groupByCountry is enabled', async () => {

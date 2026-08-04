@@ -412,6 +412,15 @@ export function parseCountryFromNodeName(nodeName) {
 	return null;
 }
 
+export function addCountryFlagToNodeName(nodeName) {
+	if (typeof nodeName !== 'string' || /^\p{Regional_Indicator}{2}/u.test(nodeName.trim())) {
+		return nodeName;
+	}
+
+	const country = parseCountryFromNodeName(nodeName);
+	return country ? `${country.emoji} ${nodeName}` : nodeName;
+}
+
 // Build a mihomo proxy-group `filter` regex matching node names of one country.
 // Mirrors the classification patterns in parseCountryFromNodeName (same escaping
 // and \b rules) so runtime filtering agrees with build-time grouping; the flag
