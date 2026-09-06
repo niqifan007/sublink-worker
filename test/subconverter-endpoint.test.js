@@ -257,13 +257,14 @@ describe('GET /subconverter', () => {
             expect(nodeSelectLine).not.toContain('自动选择');
         });
 
-        it('generates all 30 country groups', async () => {
+        it('generates all 31 country groups including Macao', async () => {
             const app = createTestApp();
             const res = await app.request('http://localhost/subconverter?selectedRules=minimal&group_by_country=true');
             const text = await res.text();
 
             const countryGroupCount = (text.match(/custom_proxy_group=.+`url-test`\(\?i\)\(.+\)`http/g) || []).length;
-            expect(countryGroupCount).toBe(30);
+            expect(countryGroupCount).toBe(31);
+            expect(text).toContain('🇲🇴 Macao');
         });
 
         it('uses English group names with lang=en', async () => {

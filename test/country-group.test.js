@@ -2,12 +2,34 @@ import { describe, it, expect } from 'vitest';
 import yaml from 'js-yaml';
 import { ClashConfigBuilder } from '../src/builders/ClashConfigBuilder.js';
 import { createTranslator } from '../src/i18n/index.js';
-import { addCountryFlagToNodeName, groupProxiesByCountry, parseCountryFromNodeName } from '../src/utils.js';
+import { COUNTRY_DATA, addCountryFlagToNodeName, buildCountryNameFilter, groupProxiesByCountry, parseCountryFromNodeName } from '../src/utils.js';
 
 // Create translator for tests
 const t = createTranslator('zh-CN');
 
 describe('Country Group Tests', () => {
+    it('adds flags and country groups for every supported country code', async () => {
+        const countries = Object.entries(COUNTRY_DATA);
+        expect(COUNTRY_DATA.MO).toMatchObject({ emoji: '🇲🇴' });
+        const input = countries.map(([code]) =>
+            `ss://YWVzLTEyOC1nY206dGVzdA@${code.toLowerCase()}.example.com:443#${code}-Cyberzone`
+        ).join('\n');
+        const builder = new ClashConfigBuilder(input, [], [], null, 'zh-CN', 'test-agent', true);
+        const config = yaml.load(await builder.build());
+
+        for (const [code, country] of countries) {
+            const nodeName = `${code}-Cyberzone`;
+            const flaggedName = `${country.emoji} ${nodeName}`;
+            expect(config.proxies.map(proxy => proxy.name)).toContain(flaggedName);
+            expect(config['proxy-groups'].find(group => group.name === `${country.emoji} ${country.name}`).proxies).toEqual([flaggedName]);
+            expect(parseCountryFromNodeName(nodeName.toLowerCase())).toMatchObject({ code });
+            expect(parseCountryFromNodeName(`prefix${code}suffix`)).toBeNull();
+            const filter = new RegExp(buildCountryNameFilter(country).replace(/^\(\?i\)/, ''), 'i');
+            expect(filter.test(nodeName)).toBe(true);
+            expect(filter.test(`prefix${code}suffix`)).toBe(false);
+        }
+    });
+
     it('should group proxies by country correctly', async () => {
         const input = `
 ss://YWVzLTEyOC1nY206dGVzdA@example.com:443#HK-Node-1
