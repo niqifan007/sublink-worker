@@ -4,6 +4,15 @@ import { ClashConfigBuilder } from '../src/builders/ClashConfigBuilder.js';
 import { parseAnytls } from '../src/parsers/protocols/anytlsParser.js';
 
 describe('AnyTLS support', () => {
+    it('preserves legacy aliases and skips empty query values', () => {
+        for (const key of ['password', 'auth']) {
+            const result = parseAnytls(`anytls://example.com/?${key}=secret&sni=&peer=real.example.com&client-fingerprint=chrome&fp=firefox`);
+            expect(result.password).toBe('secret');
+            expect(result.tls.server_name).toBe('real.example.com');
+            expect(result.tls.utls.fingerprint).toBe('chrome');
+        }
+    });
+
     it('parses AnyTLS URI into the internal proxy shape', () => {
         const result = parseAnytls('anytls://REPLACE%40PASS@example.com:8443/?sni=real.example.com&insecure=1&udp=false&alpn=h2,http/1.1&client-fingerprint=chrome&idle-session-check-interval=30&idle-session-timeout=120&min-idle-session=5#ANYTLS-main');
 
