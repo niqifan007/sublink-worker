@@ -52,11 +52,18 @@ function getCountryFlagIcon(code) {
 }
 
 export class ClashConfigBuilder extends BaseConfigBuilder {
-    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry = false, enableClashUI = false, externalController, externalUiDownloadUrl, includeAutoSelect = true) {
+    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry = false, enableClashUI = false, externalController, externalUiDownloadUrl, includeAutoSelect = true, enableMeslDns = false) {
+        const useDefaultConfig = !baseConfig;
         if (!baseConfig) {
             baseConfig = CLASH_CONFIG;
         }
         super(inputString, baseConfig, lang, userAgent, groupByCountry, includeAutoSelect);
+        if (useDefaultConfig && enableMeslDns) {
+            this.config.dns.nameserver = [
+                'https://zone.rlose.com:39933/api-query',
+                'https://radar.rlose.com/api-query'
+            ];
+        }
         this.selectedRules = selectedRules;
         this.customRules = customRules;
         this.countryGroupNames = [];

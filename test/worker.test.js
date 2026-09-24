@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import yaml from 'js-yaml';
 import { createApp } from '../src/app/createApp.jsx';
 import { MemoryKVAdapter } from '../src/adapters/kv/memoryKv.js';
 
@@ -88,6 +89,22 @@ describe('Worker', () => {
         expect(res.headers.get('content-type')).toContain('text/yaml');
         const text = await res.text();
         expect(text).toContain('proxies:');
+    });
+
+    it('GET /clash uses mesl DNS only when enabled', async () => {
+        const app = createTestApp();
+        const config = encodeURIComponent('ss://YWVzLTEyOC1nY206dGVzdA@example.com:443#Node');
+        const enabled = yaml.load(await (await app.request(`http://localhost/clash?config=${config}&enable_mesl_dns=true`)).text());
+        const disabled = yaml.load(await (await app.request(`http://localhost/clash?config=${config}`)).text());
+
+        expect(enabled.dns.nameserver).toEqual([
+            'https://zone.rlose.com:39933/api-query',
+            'https://radar.rlose.com/api-query'
+        ]);
+        expect(disabled.dns.nameserver).toEqual([
+            'https://doh.pub/dns-query',
+            'https://dns.alidns.com/dns-query'
+        ]);
     });
 
     it('GET /clash rejects empty url-test proxy groups with a diagnostic error', async () => {
