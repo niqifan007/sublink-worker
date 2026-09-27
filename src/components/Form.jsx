@@ -10,7 +10,8 @@ const LINK_FIELDS = [
   { key: 'xray', labelKey: 'xrayLink' },
   { key: 'singbox', labelKey: 'singboxLink' },
   { key: 'clash', labelKey: 'clashLink' },
-  { key: 'surge', labelKey: 'surgeLink' }
+  { key: 'surge', labelKey: 'surgeLink' },
+  { key: 'loon', labelKey: 'loonLink' }
 ];
 
 export const Form = (props) => {

@@ -3,6 +3,11 @@
  * Base configuration template for Clash client
  */
 
+export const MESL_DOH_SERVERS = [
+	'https://zone.rlose.com:39933/api-query',
+	'https://radar.rlose.com/api-query'
+];
+
 export const CLASH_CONFIG = {
 	'port': 7890,
 	'socks-port': 7891,

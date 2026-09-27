@@ -1,5 +1,5 @@
 import yaml from 'js-yaml';
-import { CLASH_CONFIG, generateRules, generateClashRuleSets, getOutbounds, PREDEFINED_RULE_SETS, DIRECT_DEFAULT_RULES } from '../config/index.js';
+import { CLASH_CONFIG, MESL_DOH_SERVERS, generateRules, generateClashRuleSets, getOutbounds, PREDEFINED_RULE_SETS, DIRECT_DEFAULT_RULES } from '../config/index.js';
 import { BaseConfigBuilder } from './BaseConfigBuilder.js';
 import { addCountryFlagToNodeName, deepCopy, groupProxiesByCountry, buildCountryNameFilter } from '../utils.js';
 import { addProxyWithDedup } from './helpers/proxyHelpers.js';
@@ -59,10 +59,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
         }
         super(inputString, baseConfig, lang, userAgent, groupByCountry, includeAutoSelect);
         if (useDefaultConfig && enableMeslDns) {
-            this.config.dns.nameserver = [
-                'https://zone.rlose.com:39933/api-query',
-                'https://radar.rlose.com/api-query'
-            ];
+            this.config.dns.nameserver = [...MESL_DOH_SERVERS];
         }
         this.selectedRules = selectedRules;
         this.customRules = customRules;

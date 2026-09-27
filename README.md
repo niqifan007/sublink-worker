@@ -52,7 +52,7 @@
 ShadowSocks • VMess • VLESS • Hysteria2 • Trojan • TUIC
 
 ### Client Support
-Sing-Box • Clash • Xray/V2Ray • Surge
+Sing-Box • Clash • Xray/V2Ray • Surge • Loon (node subscriptions)
 
 ### Input Support
 - Base64 subscriptions
@@ -66,6 +66,8 @@ Sing-Box • Clash • Xray/V2Ray • Surge
 - Flexible API for script automation
 - Multi-language support (Chinese, English, Persian, Russian)
 - Web interface with predefined rule sets and customizable policy groups
+
+Loon: import the generated `/loon` link in `[Remote Proxy]`. The `enable_mesl_dns=true` option adds MESL DoH servers to the subscription's `[DNS]` section for resolving node hostnames.
 
 ## 🤝 Contributing
 

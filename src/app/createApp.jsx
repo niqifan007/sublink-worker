@@ -9,6 +9,9 @@ import { UpdateChecker } from '../components/UpdateChecker.jsx';
 import { SingboxConfigBuilder } from '../builders/SingboxConfigBuilder.js';
 import { ClashConfigBuilder } from '../builders/ClashConfigBuilder.js';
 import { SurgeConfigBuilder } from '../builders/SurgeConfigBuilder.js';
+import { BaseConfigBuilder } from '../builders/BaseConfigBuilder.js';
+import { formatLoonProxy } from '../builders/formatLoonProxy.js';
+import { addProxyWithDedup } from '../builders/helpers/proxyHelpers.js';
 import { createTranslator, resolveLanguage } from '../i18n/index.js';
 import { encodeBase64, tryDecodeSubscriptionLines } from '../utils.js';
 import { APP_NAME, APP_SUBTITLE } from '../constants.js';
@@ -16,7 +19,7 @@ import { ShortLinkService } from '../services/shortLinkService.js';
 import { ConfigStorageService } from '../services/configStorageService.js';
 import { ServiceError, MissingDependencyError } from '../services/errors.js';
 import { normalizeRuntime } from '../runtime/runtimeConfig.js';
-import { PREDEFINED_RULE_SETS, SING_BOX_CONFIG, SING_BOX_CONFIG_V1_11, generateSubconverterConfig } from '../config/index.js';
+import { MESL_DOH_SERVERS, PREDEFINED_RULE_SETS, SING_BOX_CONFIG, SING_BOX_CONFIG_V1_11, generateSubconverterConfig } from '../config/index.js';
 
 const DEFAULT_USER_AGENT = 'curl/7.74.0';
 
@@ -219,6 +222,37 @@ export function createApp(bindings = {}) {
         }
     });
 
+    app.get('/loon', async (c) => {
+        try {
+            const config = c.req.query('config');
+            if (!config) return c.text('Missing config parameter', 400);
+
+            const ua = c.req.query('ua') || getRequestHeader(c.req, 'User-Agent') || DEFAULT_USER_AGENT;
+            const parser = new BaseConfigBuilder(config, {}, c.get('lang'), ua);
+            const proxies = await parser.parseCustomItems();
+            const lines = [];
+            for (const proxy of proxies) {
+                const line = formatLoonProxy(proxy);
+                addProxyWithDedup(lines, line, {
+                    getName: item => item.split(' = ')[0],
+                    setName: (item, name) => `${name}${item.slice(item.indexOf(' = '))}`
+                });
+            }
+            if (!lines.length) return c.text('No Loon-compatible proxies found', 400);
+
+            const sections = [];
+            if (parseBooleanFlag(c.req.query('enable_mesl_dns'))) {
+                sections.push('[DNS]', `doh-server = ${MESL_DOH_SERVERS.join(',')}`, '');
+            }
+            sections.push('[Proxy]', ...lines);
+            const userinfo = parser.getSubscriptionUserinfo();
+            if (userinfo) c.header('subscription-userinfo', userinfo);
+            return c.text(sections.join('\n'), 200, { 'Content-Type': 'text/plain; charset=utf-8' });
+        } catch (error) {
+            return handleError(c, error, runtime.logger);
+        }
+    });
+
     app.get('/subconverter', (c) => {
         try {
             const rawSelectedRules = c.req.query('selectedRules');
@@ -349,6 +383,7 @@ export function createApp(bindings = {}) {
     };
 
     app.get('/s/:code', redirectHandler('surge'));
+    app.get('/l/:code', redirectHandler('loon'));
     app.get('/b/:code', redirectHandler('singbox'));
     app.get('/c/:code', redirectHandler('clash'));
     app.get('/x/:code', redirectHandler('xray'));
@@ -384,13 +419,13 @@ export function createApp(bindings = {}) {
 
             const prefix = pathParts[1];
             const shortCode = pathParts[2];
-            if (!['b', 'c', 'x', 's'].includes(prefix)) return c.text(t('invalidShortUrl'), 400);
+            if (!['b', 'c', 'x', 's', 'l'].includes(prefix)) return c.text(t('invalidShortUrl'), 400);
 
             const shortLinks = requireShortLinkService(services.shortLinks);
             const originalParam = await shortLinks.resolveShortCode(shortCode);
             if (!originalParam) return c.text(t('shortUrlNotFound'), 404);
 
-            const mapping = { b: 'singbox', c: 'clash', x: 'xray', s: 'surge' };
+            const mapping = { b: 'singbox', c: 'clash', x: 'xray', s: 'surge', l: 'loon' };
             const originalUrl = `${urlObj.origin}/${mapping[prefix]}${originalParam}`;
             return c.json({ originalUrl });
         } catch (error) {
