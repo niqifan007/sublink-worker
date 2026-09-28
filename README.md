@@ -67,7 +67,7 @@ Sing-Box • Clash • Xray/V2Ray • Surge • Loon (node subscriptions)
 - Multi-language support (Chinese, English, Persian, Russian)
 - Web interface with predefined rule sets and customizable policy groups
 
-Loon: import the generated `/loon` link in `[Remote Proxy]`. The `enable_mesl_dns=true` option adds MESL DoH servers to the subscription's `[DNS]` section for resolving node hostnames.
+Loon: import the generated `/loon` link in `[Remote Proxy]`. With `enable_mesl_dns=true`, each node uses MESL DoH via `server-dns`; without it, the subscription leaves DNS unchanged. For ordinary domain requests, set `doh-server = https://doh.pub/dns-query,https://dns.alidns.com/dns-query` in the main profile's `[General]` section. A node subscription cannot set global DNS.
 
 ## 🤝 Contributing
 

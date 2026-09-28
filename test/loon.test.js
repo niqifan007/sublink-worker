@@ -25,9 +25,13 @@ describe('Loon node subscription', () => {
         expect(normalText).toContain('HY2 = Hysteria2,hy.example.com,443,"secret"');
         expect(normalText).not.toContain('TUIC');
         expect(normalText).not.toContain('[DNS]');
+        expect(normalText).not.toContain('server-dns=');
 
         const mesl = await (await app.request(`http://localhost/loon?config=${config}&enable_mesl_dns=true`)).text();
-        expect(mesl).toContain('[DNS]\ndoh-server = https://zone.rlose.com:39933/api-query,https://radar.rlose.com/api-query\n\n[Proxy]');
+        expect(mesl).not.toContain('[DNS]');
+        const meslNodes = mesl.split('[Proxy]\n')[1].split('\n');
+        expect(meslNodes).toHaveLength(4);
+        expect(meslNodes.every(line => line.endsWith('server-dns="https://zone.rlose.com:39933/api-query,https://radar.rlose.com/api-query"'))).toBe(true);
     });
 
     it('quotes commas in credentials and resolves short links', async () => {

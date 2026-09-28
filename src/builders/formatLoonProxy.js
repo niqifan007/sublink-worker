@@ -1,7 +1,7 @@
 const quote = (value) => `"${String(value).replace(/[\r\n]/g, '').replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
 const value = (input) => /[,"\r\n]/.test(String(input)) ? quote(input) : String(input);
 
-export function formatLoonProxy(proxy) {
+export function formatLoonProxy(proxy, serverDns) {
     const { tag, server, server_port: port, tls, transport } = proxy;
     if (!String(tag ?? '').trim() || !server || !Number.isInteger(Number(port)) || Number(port) < 1 || Number(port) > 65535) return null;
     if (transport?.type && !['tcp', 'ws', 'http'].includes(transport.type)) return null;
@@ -73,6 +73,7 @@ export function formatLoonProxy(proxy) {
     }
     if (proxy.tcp_fast_open || proxy.fast_open) parts.push('fast-open=true');
     if (typeof proxy.udp === 'boolean') parts.push(`udp=${proxy.udp}`);
+    if (serverDns) parts.push(`server-dns=${quote(serverDns)}`);
 
     return `${String(tag).replaceAll('=', ' ').trim()} = ${parts.join(',')}`;
 }

@@ -231,8 +231,9 @@ export function createApp(bindings = {}) {
             const parser = new BaseConfigBuilder(config, {}, c.get('lang'), ua);
             const proxies = await parser.parseCustomItems();
             const lines = [];
+            const serverDns = parseBooleanFlag(c.req.query('enable_mesl_dns')) ? MESL_DOH_SERVERS.join(',') : null;
             for (const proxy of proxies) {
-                const line = formatLoonProxy(proxy);
+                const line = formatLoonProxy(proxy, serverDns);
                 addProxyWithDedup(lines, line, {
                     getName: item => item.split(' = ')[0],
                     setName: (item, name) => `${name}${item.slice(item.indexOf(' = '))}`
@@ -240,14 +241,9 @@ export function createApp(bindings = {}) {
             }
             if (!lines.length) return c.text('No Loon-compatible proxies found', 400);
 
-            const sections = [];
-            if (parseBooleanFlag(c.req.query('enable_mesl_dns'))) {
-                sections.push('[DNS]', `doh-server = ${MESL_DOH_SERVERS.join(',')}`, '');
-            }
-            sections.push('[Proxy]', ...lines);
             const userinfo = parser.getSubscriptionUserinfo();
             if (userinfo) c.header('subscription-userinfo', userinfo);
-            return c.text(sections.join('\n'), 200, { 'Content-Type': 'text/plain; charset=utf-8' });
+            return c.text(['[Proxy]', ...lines].join('\n'), 200, { 'Content-Type': 'text/plain; charset=utf-8' });
         } catch (error) {
             return handleError(c, error, runtime.logger);
         }
