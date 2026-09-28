@@ -59,7 +59,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
         }
         super(inputString, baseConfig, lang, userAgent, groupByCountry, includeAutoSelect);
         if (useDefaultConfig && enableMeslDns) {
-            this.config.dns.nameserver = [...MESL_DOH_SERVERS];
+            this.config.dns['proxy-server-nameserver'] = [...MESL_DOH_SERVERS];
         }
         this.selectedRules = selectedRules;
         this.customRules = customRules;

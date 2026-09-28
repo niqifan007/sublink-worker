@@ -98,13 +98,15 @@ describe('Worker', () => {
         const disabled = yaml.load(await (await app.request(`http://localhost/clash?config=${config}`)).text());
 
         expect(enabled.dns.nameserver).toEqual([
-            'https://zone.rlose.com:39933/api-query',
-            'https://radar.rlose.com/api-query'
-        ]);
-        expect(disabled.dns.nameserver).toEqual([
             'https://doh.pub/dns-query',
             'https://dns.alidns.com/dns-query'
         ]);
+        expect(enabled.dns['proxy-server-nameserver']).toEqual([
+            'https://zone.rlose.com:39933/api-query',
+            'https://radar.rlose.com/api-query'
+        ]);
+        expect(disabled.dns.nameserver).toEqual(enabled.dns.nameserver);
+        expect(disabled.dns['proxy-server-nameserver']).toEqual(enabled.dns.nameserver);
     });
 
     it('GET /clash rejects empty url-test proxy groups with a diagnostic error', async () => {
