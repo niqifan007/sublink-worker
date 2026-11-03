@@ -84,6 +84,7 @@ export const formLogicFn = (t) => {
             selectedPredefinedRule: 'balanced',
             subconverterCopied: false,
             groupByCountry: false,
+            sortByCountry: false,
             includeAutoSelect: true,
             enableMeslDns: false,
             enableClashUI: false,
@@ -132,6 +133,7 @@ export const formLogicFn = (t) => {
                 this.input = localStorage.getItem('inputTextarea') || '';
                 this.showAdvanced = localStorage.getItem('advancedToggle') === 'true';
                 this.groupByCountry = localStorage.getItem('groupByCountry') === 'true';
+                this.sortByCountry = localStorage.getItem('sortByCountry') === 'true';
                 this.includeAutoSelect = localStorage.getItem('includeAutoSelect') !== 'false';
                 this.enableMeslDns = localStorage.getItem('enableMeslDns') === 'true';
                 this.enableClashUI = localStorage.getItem('enableClashUI') === 'true';
@@ -164,6 +166,7 @@ export const formLogicFn = (t) => {
                 });
                 this.$watch('showAdvanced', val => localStorage.setItem('advancedToggle', val));
                 this.$watch('groupByCountry', val => localStorage.setItem('groupByCountry', val));
+                this.$watch('sortByCountry', val => localStorage.setItem('sortByCountry', val));
                 this.$watch('includeAutoSelect', val => localStorage.setItem('includeAutoSelect', val));
                 this.$watch('enableMeslDns', val => localStorage.setItem('enableMeslDns', val));
                 this.$watch('enableClashUI', val => localStorage.setItem('enableClashUI', val));
@@ -382,6 +385,7 @@ export const formLogicFn = (t) => {
                     params.append('customRules', JSON.stringify(customRules));
 
                     if (this.groupByCountry) params.append('group_by_country', 'true');
+                    if (this.sortByCountry) params.append('sort_by_country', 'true');
                     if (!this.includeAutoSelect) params.append('include_auto_select', 'false');
                     if (this.enableMeslDns) params.append('enable_mesl_dns', 'true');
                     if (this.enableClashUI) params.append('enable_clash_ui', 'true');
@@ -627,6 +631,7 @@ export const formLogicFn = (t) => {
 
                 // Extract other parameters
                 this.groupByCountry = params.get('group_by_country') === 'true';
+                this.sortByCountry = params.get('sort_by_country') === 'true';
                 this.includeAutoSelect = params.get('include_auto_select') !== 'false';
                 this.enableMeslDns = params.get('enable_mesl_dns') === 'true';
                 this.enableClashUI = params.get('enable_clash_ui') === 'true';
@@ -653,7 +658,7 @@ export const formLogicFn = (t) => {
                 }
 
                 // Expand advanced options if any advanced settings are present
-                if (selectedRules || customRules || this.groupByCountry || this.enableMeslDns || this.enableClashUI ||
+                if (selectedRules || customRules || this.groupByCountry || this.sortByCountry || this.enableMeslDns || this.enableClashUI ||
                     externalController || externalUiDownloadUrl || ua || configId) {
                     this.showAdvanced = true;
                 }

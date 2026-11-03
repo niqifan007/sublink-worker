@@ -32,4 +32,32 @@ describe('formLogic toString fix', () => {
     expect(typeof data.toggleAccordion).toBe('function');
     expect(data.showAdvanced).toBe(false);
   });
+
+  it('persists country sorting and restores it from generated links', async () => {
+    const storage = new Map([['sortByCountry', 'true']]);
+    const watchers = {};
+    const fakeWindow = { location: { origin: 'http://localhost', search: '' }, PREDEFINED_RULE_SETS: {} };
+    const fakeStorage = { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, String(value)) };
+    const fn = new Function('window', 'document', 'localStorage', '(' + formLogicFn.toString() + ')(); return window.formData();');
+    const data = fn(fakeWindow, { querySelector: () => null }, fakeStorage);
+    expect(data.sortByCountry).toBe(false);
+    data.$watch = (key, callback) => { watchers[key] = callback; };
+    data.init();
+    expect(data.sortByCountry).toBe(true);
+    watchers.sortByCountry(false);
+    expect(storage.get('sortByCountry')).toBe('false');
+    data.input = 'ss://example.com:443#HK';
+    await data.submitForm();
+    for (const link of Object.values(data.generatedLinks)) {
+      expect(new URL(link).searchParams.get('sort_by_country')).toBe('true');
+    }
+    data.sortByCountry = false;
+    data.populateFormFromUrl(new URL(data.generatedLinks.clash));
+    expect(data.sortByCountry).toBe(true);
+    expect(data.showAdvanced).toBe(true);
+    data.populateFormFromUrl(new URL('http://localhost/clash?config=test'));
+    expect(data.sortByCountry).toBe(false);
+    await data.submitForm();
+    expect(new URL(data.generatedLinks.clash).searchParams.has('sort_by_country')).toBe(false);
+  });
 });

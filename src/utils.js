@@ -212,6 +212,13 @@ export function groupProxiesByCountry(proxies, { getName } = {}) {
 	return grouped;
 }
 
+export function sortProxiesByCountry(proxies, getName) {
+	return proxies
+		.map(proxy => ({ proxy, country: parseCountryFromNodeName(getName(proxy))?.name ?? '\uffff' }))
+		.sort((a, b) => a.country.localeCompare(b.country, 'en'))
+		.map(({ proxy }) => proxy);
+}
+
 export function createStableProviderName(url) {
 	if (typeof url !== 'string' || url.trim() === '') {
 		throw new Error('Provider URL must be a non-empty string');
@@ -382,6 +389,8 @@ export const COUNTRY_DATA = {
 };
 
 export function parseCountryFromNodeName(nodeName) {
+	if (typeof nodeName !== 'string') return null;
+
 	// Build patterns sorted by length descending so longer aliases match first
 	// (e.g. "Indonesia" before "India", "United States" before "US").
 	// Short aliases (<=3 chars, all ASCII, e.g. US, UK, HK) get \b word boundaries
@@ -410,6 +419,11 @@ export function parseCountryFromNodeName(nodeName) {
 		}
 	}
 
+	for (const code in COUNTRY_DATA) {
+		if (nodeName.includes(COUNTRY_DATA[code].emoji)) {
+			return { code, ...COUNTRY_DATA[code] };
+		}
+	}
 	return null;
 }
 

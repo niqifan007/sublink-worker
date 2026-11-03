@@ -11,9 +11,10 @@ import { ClashConfigBuilder } from '../builders/ClashConfigBuilder.js';
 import { SurgeConfigBuilder } from '../builders/SurgeConfigBuilder.js';
 import { BaseConfigBuilder } from '../builders/BaseConfigBuilder.js';
 import { formatLoonProxy } from '../builders/formatLoonProxy.js';
+import { parseVmess } from '../parsers/protocols/vmessParser.js';
 import { addProxyWithDedup } from '../builders/helpers/proxyHelpers.js';
 import { createTranslator, resolveLanguage } from '../i18n/index.js';
-import { encodeBase64, tryDecodeSubscriptionLines } from '../utils.js';
+import { encodeBase64, tryDecodeSubscriptionLines, sortProxiesByCountry } from '../utils.js';
 import { APP_NAME, APP_SUBTITLE } from '../constants.js';
 import { ShortLinkService } from '../services/shortLinkService.js';
 import { ConfigStorageService } from '../services/configStorageService.js';
@@ -82,6 +83,7 @@ export function createApp(bindings = {}) {
             const customRules = parseJsonArray(c.req.query('customRules'));
             const ua = c.req.query('ua') || getRequestHeader(c.req, 'User-Agent') || DEFAULT_USER_AGENT;
             const groupByCountry = parseBooleanFlag(c.req.query('group_by_country'));
+            const sortByCountry = parseBooleanFlag(c.req.query('sort_by_country'));
             const includeAutoSelect = c.req.query('include_auto_select') !== 'false';
             const enableClashUI = parseBooleanFlag(c.req.query('enable_clash_ui'));
             const externalController = c.req.query('external_controller');
@@ -114,7 +116,8 @@ export function createApp(bindings = {}) {
                 externalController,
                 externalUiDownloadUrl,
                 singboxConfigVersion,
-                includeAutoSelect
+                includeAutoSelect,
+                sortByCountry
             );
             await builder.build();
             const userinfo = builder.getSubscriptionUserinfo();
@@ -138,6 +141,7 @@ export function createApp(bindings = {}) {
             const customRules = parseJsonArray(c.req.query('customRules'));
             const ua = c.req.query('ua') || getRequestHeader(c.req, 'User-Agent') || DEFAULT_USER_AGENT;
             const groupByCountry = parseBooleanFlag(c.req.query('group_by_country'));
+            const sortByCountry = parseBooleanFlag(c.req.query('sort_by_country'));
             const includeAutoSelect = c.req.query('include_auto_select') !== 'false';
             const enableMeslDns = parseBooleanFlag(c.req.query('enable_mesl_dns'));
             const enableClashUI = parseBooleanFlag(c.req.query('enable_clash_ui'));
@@ -164,7 +168,8 @@ export function createApp(bindings = {}) {
                 externalController,
                 externalUiDownloadUrl,
                 includeAutoSelect,
-                enableMeslDns
+                enableMeslDns,
+                sortByCountry
             );
             await builder.build();
             const userinfo = builder.getSubscriptionUserinfo();
@@ -189,6 +194,7 @@ export function createApp(bindings = {}) {
             const customRules = parseJsonArray(c.req.query('customRules'));
             const ua = c.req.query('ua') || getRequestHeader(c.req, 'User-Agent') || DEFAULT_USER_AGENT;
             const groupByCountry = parseBooleanFlag(c.req.query('group_by_country'));
+            const sortByCountry = parseBooleanFlag(c.req.query('sort_by_country'));
             const includeAutoSelect = c.req.query('include_auto_select') !== 'false';
             const configId = c.req.query('configId');
             const lang = c.get('lang');
@@ -207,7 +213,8 @@ export function createApp(bindings = {}) {
                 lang,
                 ua,
                 groupByCountry,
-                includeAutoSelect
+                includeAutoSelect,
+                sortByCountry
             );
             builder.setSubscriptionUrl(c.req.url);
             await builder.build();
@@ -230,9 +237,12 @@ export function createApp(bindings = {}) {
             const ua = c.req.query('ua') || getRequestHeader(c.req, 'User-Agent') || DEFAULT_USER_AGENT;
             const parser = new BaseConfigBuilder(config, {}, c.get('lang'), ua);
             const proxies = await parser.parseCustomItems();
+            const orderedProxies = parseBooleanFlag(c.req.query('sort_by_country'))
+                ? sortProxiesByCountry(proxies, proxy => proxy.tag)
+                : proxies;
             const lines = [];
             const serverDns = parseBooleanFlag(c.req.query('enable_mesl_dns')) ? MESL_DOH_SERVERS.join(',') : null;
-            for (const proxy of proxies) {
+            for (const proxy of orderedProxies) {
                 const line = formatLoonProxy(proxy, serverDns);
                 addProxyWithDedup(lines, line, {
                     getName: item => item.split(' = ')[0],
@@ -329,7 +339,18 @@ export function createApp(bindings = {}) {
             }
         }
 
-        const finalString = finalProxyList.join('\n');
+        const orderedProxies = parseBooleanFlag(c.req.query('sort_by_country'))
+            ? sortProxiesByCountry(finalProxyList, uri => {
+                try {
+                    if (uri.startsWith('vmess://')) return parseVmess(uri).tag;
+                    const hashIndex = uri.indexOf('#');
+                    return hashIndex === -1 ? '' : decodeURIComponent(uri.slice(hashIndex + 1));
+                } catch {
+                    return '';
+                }
+            })
+            : finalProxyList;
+        const finalString = orderedProxies.join('\n');
         if (!finalString) {
             return c.text('Missing config parameter', 400);
         }

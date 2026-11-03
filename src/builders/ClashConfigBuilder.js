@@ -52,12 +52,12 @@ function getCountryFlagIcon(code) {
 }
 
 export class ClashConfigBuilder extends BaseConfigBuilder {
-    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry = false, enableClashUI = false, externalController, externalUiDownloadUrl, includeAutoSelect = true, enableMeslDns = false) {
+    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry = false, enableClashUI = false, externalController, externalUiDownloadUrl, includeAutoSelect = true, enableMeslDns = false, sortByCountry = false) {
         const useDefaultConfig = !baseConfig;
         if (!baseConfig) {
             baseConfig = CLASH_CONFIG;
         }
-        super(inputString, baseConfig, lang, userAgent, groupByCountry, includeAutoSelect);
+        super(inputString, baseConfig, lang, userAgent, groupByCountry, includeAutoSelect, sortByCountry);
         if (useDefaultConfig && enableMeslDns) {
             this.config.dns['proxy-server-nameserver'] = [...MESL_DOH_SERVERS];
         }
