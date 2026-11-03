@@ -12,12 +12,19 @@ vi.mock('../src/parsers/subscription/httpSubscriptionFetcher.js', async (importO
 }));
 import { fetchSubscriptionWithFormat } from '../src/parsers/subscription/httpSubscriptionFetcher.js';
 
-const names = ['未知节点A', 'US-2', 'HK-2', '🇯🇵 01', '美国-1', '香港-1', '未知节点B'];
+const names = [
+    '未知节点A', 'US-2', 'HK-2', '🇯🇵 01', '美国-1', '香港-1', '未知节点B',
+    'DE-1', '新加坡-2', '台湾-1', 'UK-1', 'Singapore-1', '德国-2', 'IN-1', 'CA-1', 'India-2', 'France-1'
+];
+const sortedNames = [
+    'HK-2', '香港-1', '新加坡-2', 'Singapore-1', '台湾-1', '🇯🇵 01', 'US-2', '美国-1',
+    'DE-1', '德国-2', 'UK-1', 'France-1', 'IN-1', 'India-2', 'CA-1', '未知节点A', '未知节点B'
+];
 const uris = names.map((name, index) => `ss://YWVzLTEyOC1nY206dGVzdA@example.com:${4400 + index}#${encodeURIComponent(name)}`);
 const proxies = names.map((tag, index) => ({
     tag, type: 'shadowsocks', server: 'example.com', server_port: 4400 + index, method: 'aes-128-gcm', password: 'test'
 }));
-const sortedPorts = [4402, 4405, 4403, 4401, 4404, 4400, 4406];
+const sortedPorts = sortedNames.map(name => 4400 + names.indexOf(name));
 
 const readPorts = async (route, response) => {
     const text = await response.text();
@@ -32,10 +39,10 @@ const readPorts = async (route, response) => {
 describe('country / region node sorting', () => {
     afterEach(() => vi.resetAllMocks());
 
-    it('keeps aliases together, preserves regional order and leaves unknown nodes last without mutating input', () => {
+    it('uses built-in weights and first-seen countries within each tier, preserving aliases and node order', () => {
         const input = [...names, undefined, 'plus-node'];
         expect(sortProxiesByCountry(input, name => name)).toEqual([
-            'HK-2', '香港-1', '🇯🇵 01', 'US-2', '美国-1', '未知节点A', '未知节点B', undefined, 'plus-node'
+            ...sortedNames, undefined, 'plus-node'
         ]);
         expect(input).toEqual([...names, undefined, 'plus-node']);
         expect(sortProxiesByCountry([], name => name)).toEqual([]);
@@ -82,7 +89,7 @@ describe('country / region node sorting', () => {
         expect(response.headers.get('subscription-userinfo')).toBe('upload=1; download=2; total=100');
         const text = await response.text();
         expect(text).not.toContain('_auto_provider_');
-        expect(await readPorts(route, new Response(text))).toEqual([4402, 4405, 5000, 4403, 4401, 4404, 4400, 4406]);
+        expect(await readPorts(route, new Response(text))).toEqual(sortedPorts.flatMap(port => port === 4403 ? [5000, port] : [port]));
     });
 
     it('sorts VMess names and preserves original URIs, including malformed nodes', async () => {

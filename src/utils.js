@@ -1,6 +1,10 @@
 const PATH_LENGTH = 7;
 const FNV_32_OFFSET_BASIS = 0x811c9dc5;
 const FNV_32_PRIME = 0x01000193;
+const COUNTRY_SORT_WEIGHTS = {
+	HK: 1, SG: 2, TW: 3, JP: 4, US: 5,
+	DE: 6, GB: 6, FR: 6, NL: 6, CH: 6, SE: 6, IT: 6, ES: 6, IE: 6, RU: 6, TR: 6
+};
 
 // 自定义的字符串前缀检查函数
 export function checkStartsWith(str, prefix) {
@@ -213,10 +217,17 @@ export function groupProxiesByCountry(proxies, { getName } = {}) {
 }
 
 export function sortProxiesByCountry(proxies, getName) {
-	return proxies
-		.map(proxy => ({ proxy, country: parseCountryFromNodeName(getName(proxy))?.name ?? '\uffff' }))
-		.sort((a, b) => a.country.localeCompare(b.country, 'en'))
-		.map(({ proxy }) => proxy);
+	const groups = new Map();
+	for (const proxy of proxies) {
+		const code = parseCountryFromNodeName(getName(proxy))?.code;
+		if (!groups.has(code)) {
+			groups.set(code, { weight: code ? COUNTRY_SORT_WEIGHTS[code] ?? 7 : 8, proxies: [] });
+		}
+		groups.get(code).proxies.push(proxy);
+	}
+	return [...groups.values()]
+		.sort((a, b) => a.weight - b.weight)
+		.flatMap(group => group.proxies);
 }
 
 export function createStableProviderName(url) {

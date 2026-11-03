@@ -61,7 +61,7 @@ Sing-Box • Clash • Xray/V2Ray • Surge • Loon (node subscriptions)
 
 ### Core Capabilities
 - Import subscriptions from multiple sources
-- Sort nodes by country/region with `sort_by_country=true` (or the advanced settings toggle). Nodes within each region keep their original order; unknown regions come last. Compatible HTTP subscriptions are expanded into inline nodes and refresh when the conversion link is fetched.
+- Sort nodes by country/region with `sort_by_country=true` (or the advanced settings toggle). Built-in priority: Hong Kong → Singapore → Taiwan → Japan → United States → Europe → other regions → unknown. Countries within the same priority tier follow their first appearance; nodes within each country keep their original order. Compatible HTTP subscriptions are expanded into inline nodes and refresh when the conversion link is fetched.
 - Generate fixed/random short links (KV-based)
 - Light/Dark theme toggle
 - Flexible API for script automation
